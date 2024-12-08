@@ -1,7 +1,5 @@
-local GetPlayerTeam = GetPlayerTeam
-
 local meta = FindMetaTable("Player")
-
+local GetPlayerTeam = meta.Team
 local AI_WalkableZ = 0.7
 
 -- Special AI entities:
@@ -87,7 +85,7 @@ function ZSBOTAI.DirectReachable( dest, startPos, mins, maxs, meleeRange )
 	local DestRadii = maxs.x
 	if isvector(dest) then
 		DestPos = dest
-	elseif EntityIsPlayer(dest) then
+	elseif dest:IsPlayer() then
 		local bottom, top
 		if dest:Crouching() then
 			bottom, top = dest:GetHullDuck()
@@ -127,7 +125,7 @@ function ZSBOTAI.PointReachable( dest, startPos, mins, maxs, meleeRange, bNoJump
 	local DestRadii = maxs.x
 	if isvector(dest) then
 		DestPos = dest
-	elseif EntityIsPlayer(dest) and meleeRange then
+	elseif dest:IsPlayer() and meleeRange then
 		local bottom, top
 		if dest:Crouching() then
 			bottom, top = dest:GetHullDuck()
@@ -476,7 +474,7 @@ end
 local BOT_TESTCG,BOT_TESTCF
 local _TryCollides = GM.TryCollides
 local function FilterBotMove( ent )
-	return (not EntityIsPlayer(ent) and _TryCollides(ent,BOT_TESTCG,BOT_TESTCF) and ent:ShouldBlockPlayer())
+	return (not ent:IsPlayer() and _TryCollides(ent,BOT_TESTCG,BOT_TESTCF) and ent:ShouldBlockPlayer())
 end
 
 local TF_CadePropInfo = {filter=FilterBotMove, mask=MASK_PLAYERSOLID, ignoreworld=true, output={}}

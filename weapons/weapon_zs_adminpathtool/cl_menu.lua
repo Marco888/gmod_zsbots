@@ -403,11 +403,16 @@ function SWEP:HandleHumanMenu()
 
 		-- Navmesh submenu:
 		AddButton(pga[5],"Auto-Generate NavMesh","This will generate a nav mesh for this map",function()
-			ZS_Groups.ShowYesNoMenu("!!!WARNING!!!","Doing this will freeze server for\n~1 min and restart map.\nONLY do this on DEBUG server!\nContinue?",function()
+			local generate_menu = DermaMenu()
+			generate_menu:SetPos(ScrW() * 0.5, ScrH() * 0.5)
+			local rm = generate_menu:AddSubMenu("Generate Navigation ?!!")
+			rm:AddOption("No", function() chat.AddText("Auto-Generate NavMesh cancelled") end)
+			rm:AddOption("Sure?? yes?", function()
 				PathEdit.StartMsg(5)
 				net.WriteUInt(0,2)
 				net.SendToServer()
 			end)
+			generate_menu:MakePopup()
 		end)
 		AddButton(pga[5],"Navigate a nav area","Seek out the entire nav area starting from your crosshair location.",function()
 			if not PathEdit.Aim then

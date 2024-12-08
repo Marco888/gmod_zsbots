@@ -1,5 +1,6 @@
 -- Bot AI, written by Marco
-local GetPlayerTeam = GetPlayerTeam
+local pmeta = FindMetaTable("Player")
+local GetPlayerTeam = pmeta.Team
 
 ZSBOTAI = {
 	AITable={MoveDestination={},MoveStuckTime={},PropAttackCount={},ShouldCrouch={},AttackProp={},Enemy={},LeapPathTimer={},Sight={},SideStepTime={},HumanCompanion={},GoToShop={},PendingHeal={},
@@ -10,6 +11,8 @@ ZSBOTAI = {
 
 include("sh_botai.lua")
 
+include("sv_obj_file.lua")
+include("sv_entfilters.lua")
 include("sv_botplayer.lua")
 include("sv_botreach.lua")
 include("sv_botnavigation.lua")
@@ -505,6 +508,16 @@ end
 local TRACE_Group,TRACE_Flags
 local function BulletTraceFilter( ent )
 	return GAMEMODE:TryCollides(ent, TRACE_Group, TRACE_Flags)
+end
+
+local tr_tbl = {}
+function SV_TraceHit(posa, posb, mask, attacker, filter)
+    tr_tbl.start = posa
+    tr_tbl.endpos = posb
+    tr_tbl.mask = mask
+    tr_tbl.filter = filter
+
+    return util.TraceLine(tr_tbl).Hit
 end
 
 function ShootTrace(pl, startPos, endPos)
@@ -1207,7 +1220,7 @@ end
 
 local BotColFlags = 0
 local function FilterBotMove( ent )
-	return not EntityIsPlayer(ent) and ent:ShouldBlockPlayer() and not (ent:GetCustomCollisionGroup()>0 and bit.band(ent:GetCustomCollisionGroup(),BotColFlags)==0)
+	return not ent:IsPlayer() and ent:ShouldBlockPlayer() and not (ent:GetCustomCollisionGroup()>0 and bit.band(ent:GetCustomCollisionGroup(),BotColFlags)==0)
 end
 
 -- Process a move towards destination.
@@ -1223,7 +1236,7 @@ local function ProcessMoveToward( pl, cmd )
 	elseif IsValid(md) then
 		des = E_GetPos(md)
 
-		if EntityIsPlayer(md) then
+		if md:IsPlayer() then
 			local diff = des-E_GetPos(pl)
 			local pbottom, ptop = pl:GetHull()
 			local dbottom, dtop = md:GetHull()
@@ -1317,7 +1330,7 @@ local function FireWeaponAt( pl, targ, cmd )
 		end
 
 		if COMBAT_ShouldFireWeapons then
-			local plt = EntityIsPlayer(targ)
+			local plt = targ:IsPlayer()
 			if not plt or not pl.BOT_IsShadeEnemy then
 				if not plt and GetPlayerTeam(pl)==TEAM_HUMAN then -- HACK, make bots faster at breaking doors.
 					targ:TakeDamage(50,pl,pl)
@@ -1594,7 +1607,7 @@ function ZSBOTAI.GetNearEnemies( pl, pos, dist )
 				local edist = epos:DistToSqr(pos)
 
 				-- Must be within 2000 range, infront of the player (or within 1000 range), closer then best enemy and visible.
-				if edist<dist and not e:GetSpawnProtection() and SightTrace(pos,epos) then
+				if edist<dist and not e.SpawnProtection and SightTrace(pos,epos) then
 					res = res+1
 				end
 			end
@@ -1673,7 +1686,7 @@ function ZSBOTAI.SightCheck( pl )
 				local epos = e:EyePos()
 				local dist = eye:DistToSqr(epos)
 
-				if EntityIsPlayer(e) then
+				if e:IsPlayer() then
 					local wept = e:GetActiveWeapon()
 
 					dist = IsValid(wept) and wept.GetAuraRange and dist * 9 or dist
@@ -1683,7 +1696,7 @@ function ZSBOTAI.SightCheck( pl )
 				ndir.z = 0
 
 				-- Must be within 2000 range, infront of the player (or within 1000 range), closer then best enemy and visible.
-				if BestDist>dist and (dir:Dot(ndir)>0 or dist<1000000) and not e:GetSpawnProtection() and (SightTrace(eye,epos) or SightTrace(eye, e:WorldSpaceCenter()) or SightTrace(eye, e:GetPos())) and (ET==TEAM_HUMAN or not callf(e,"IsInvisible",pl)) then
+				if BestDist>dist and (dir:Dot(ndir)>0 or dist<1000000) and not e.SpawnProtection and (SightTrace(eye,epos) or SightTrace(eye, e:WorldSpaceCenter()) or SightTrace(eye, e:GetPos())) and (ET==TEAM_HUMAN or not callf(e,"IsInvisible",pl)) then
 					BestEnemy = e
 					BestDist = dist
 				end
@@ -1719,7 +1732,7 @@ function ZSBOTAI.SightCheck( pl )
 	elseif pl.BOT_HadSight then
 		pl.BOT_HadSight = nil
 		pl.BOT_RandMoveTime = nil
-	elseif IsValid(enemy) and EntityIsPlayer(enemy) and enemy:Alive() and GetPlayerTeam(enemy)==ET and not enemy:HasGodMode() and not enemy:GetSpawnProtection() then -- Check if old enemy is still valid.
+	elseif IsValid(enemy) and enemy:IsPlayer() and enemy:Alive() and GetPlayerTeam(enemy)==ET and not enemy:HasGodMode() and not enemy.SpawnProtection then -- Check if old enemy is still valid.
 		if PLT==TEAM_HUMAN and (CurTime()-pl.BOT_AquireTime)>5 then -- Check if we've seen old enemy within last 5 seconds.
 			BOT_Enemy[pl] = nil
 			ZSBOTAI.BotOrders(pl,12)

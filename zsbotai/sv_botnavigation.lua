@@ -2,6 +2,9 @@
 if ZSBOTAI.NAV_IS_LOADED then return end
 ZSBOTAI.NAV_IS_LOADED = true
 
+local pmeta = FindMetaTable("Player")
+local GetPlayerTeam = pmeta.Team
+
 AddCSLuaFile("cl_botnavigation.lua")
 
 GM.IsNavigationExist = false
@@ -2227,7 +2230,7 @@ ENT = table.Copy(ENT)
 ENT.StartTouch = nil
 ENT.EndTouch = nil
 function ENT:Touch( ent )
-	if EntityIsPlayer(ent) then
+	if ent:IsPlayer() then
 		if ent:Alive(true) then
 			ent:Kill()
 		end
@@ -2239,7 +2242,7 @@ scripted_ents.Register(ENT,"tt_killall")
 
 ENT = table.Copy(ENT)
 function ENT:Touch( ent )
-	if EntityIsPlayer(ent) and GetPlayerTeam(ent)==TEAM_HUMAN and (ent._NextHurtTime or 0)<CurTime() then
+	if ent:IsPlayer() and GetPlayerTeam(ent)==TEAM_HUMAN and (ent._NextHurtTime or 0)<CurTime() then
 		ent._NextHurtTime = CurTime()+0.75
 		ent:TakeDamage(5,ent,self)
 	end
@@ -2248,7 +2251,7 @@ scripted_ents.Register(ENT,"tt_hurthumans")
 
 ENT = table.Copy(ENT)
 function ENT:Touch( ent )
-	if EntityIsPlayer(ent) and GetPlayerTeam(ent)==TEAM_UNDEAD and (not self.bLateGame or GAMEMODE:GetWave()>=3) and GAMEMODE:GetWaveActive() and not ent:GetZombieClassTable().Boss then
+	if ent:IsPlayer() and GetPlayerTeam(ent)==TEAM_UNDEAD and (not self.bLateGame or GAMEMODE:GetWave()>=3) and GAMEMODE:GetWaveActive() and not ent:GetZombieClassTable().Boss then
 		ent:SetSpawnProtection(true,true)
 	end
 end
